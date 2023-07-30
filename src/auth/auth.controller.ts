@@ -14,7 +14,6 @@ export class AuthController {
     // @Body('email') email: string,
     // @Body('password',ParseIntPipe) password: string
     signup(@Body() dto: AuthDto){
-        console.log({dto});
         return this.authService.signup(dto);
     }
 

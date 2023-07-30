@@ -17,7 +17,7 @@ export class AuthService {
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
-          hash,
+          hash
         },
       });
       delete user.hash; // cela veut dire qu'on ne retourne pas le mot de passe hasher
@@ -60,7 +60,7 @@ export class AuthService {
         'Credential incorrect',
       );
 
-    delete (await user).hash;
+    delete (await user).hash;// on retourne l'user sans le mot de passe hasher
     return user;
   }
 }
