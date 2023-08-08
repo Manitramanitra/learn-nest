@@ -14,7 +14,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
-    private config: ConfigService
+    private config: ConfigService,
   ) {}
 
   async signup(dto: AuthDto) {
@@ -44,41 +44,57 @@ export class AuthService {
   }
 
   async signin(dto: AuthDto) {
-    const user = this.prisma.user.findUnique({
-      where: {
-        email: dto.email,
-      },
-    });
-    if (!user)
-      throw new ForbiddenException(
-        'Credentials incorrect',
+    try {
+      const user = this.prisma.user.findUnique({
+        where: {
+          email: dto.email,
+        },
+      });
+      console.log(user);
+      if (!user)
+        throw new ForbiddenException(
+          'Credentials incorrect',
+        );
+
+      const pwMatch = await argon.verify(
+        (
+          await user
+        ).hash,
+        dto.password,
       );
 
-    const pwMatch = await argon.verify(
-      (
-        await user
-      ).hash,
-      dto.password,
-    );
-
-    if (!pwMatch)
-      throw new ForbiddenException(
-        'Credential incorrect',
+      if (!pwMatch)
+        throw new ForbiddenException(
+          'Credential incorrect',
+        );
+      return this.signToken(
+        (await user).id,
+        (await user).email,
       );
-    return this.signToken((await user).id,(await user).email);
+    } catch (e) {
+      return e;
+    }
   }
 
-   signToken(userId: number,email: string): Promise<string>{
+  async signToken(
+    userId: number,
+    email: string,
+  ): Promise<{ access_token: string }> {
     const payload = {
       sub: userId,
-      email
-    }
+      email,
+    };
 
-    const secret = this.config.get('JWT_SECRET')
-
-    return this.jwt.signAsync(payload, { 
-      expiresIn: '300m',
-      secret: secret
-    })
+    const secret = this.config.get('JWT_SECRET');
+    const token = await this.jwt.signAsync(
+      payload,
+      {
+        expiresIn: '300m',
+        secret: secret,
+      },
+    );
+    return {
+      access_token: token,
+    };
   }
 }
